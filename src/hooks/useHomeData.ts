@@ -14,7 +14,7 @@ export const useHomeData = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [searchText, setSearchText] = useState("");
 
-  // Lógica de carga de datos desde servicios [cite: 12]
+  // Lógica de carga de datos desde servicios
   const loadData = async () => {
     if (!refreshing) setLoading(true);
     try {
@@ -34,7 +34,7 @@ export const useHomeData = () => {
     }
   };
 
-  // Ejecutar carga cuando la pantalla toma el foco
+  // Ejecutar carga 
   useFocusEffect(
     useCallback(() => {
       loadData();
@@ -62,7 +62,7 @@ export const useHomeData = () => {
     setFilteredProducts(filtered);
   };
 
-  // Exponemos solo lo necesario para la View 
+  // Exponemos 
   return {
     promotions,
     filteredProducts,
