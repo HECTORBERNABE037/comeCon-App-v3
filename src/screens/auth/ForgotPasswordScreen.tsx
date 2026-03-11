@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { 
   View, 
   Text, 
@@ -6,7 +6,6 @@ import {
   TouchableOpacity, 
   StyleSheet, 
   Image, 
-  Alert, 
   KeyboardAvoidingView, 
   Platform,
   StatusBar
@@ -14,11 +13,8 @@ import {
 import { StackScreenProps } from "@react-navigation/stack";
 import { Ionicons } from '@expo/vector-icons';
 
-import { ForgotPasswordFormData, COLORS, FONT_SIZES,RootStackParamList } from "../../../types";
-import { useForm } from '../../hooks/useForm';
-import { validateForgotPassword } from '../../utils/validationRules';
-import DatabaseService from '../../services/DatabaseService';
-import { DataRepository } from "../../services/DataRepository";
+import { COLORS, FONT_SIZES, RootStackParamList } from "../../../types";
+import { useForgotPassword } from "../../hooks/useForgotPassword";
 
 const loginImage = require("../../../assets/logoApp.png");
 
@@ -26,44 +22,14 @@ type Props = StackScreenProps<RootStackParamList, "ForgotPassword">;
 
 export const ForgotPasswordScreen: React.FC<Props> = ({ navigation }) => {
   
-  const { formData, errors, updateFormData, validate } = useForm<ForgotPasswordFormData>(
-    { emailOrPhone: "" },
-    validateForgotPassword
-  );
-
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-
-  const handleSendCode = async (): Promise<void> => {
-    if (!validate()) return;
-
-    setIsLoading(true);
-
-    try {
-      // VERIFICACIÓN CON BACKEND 
-      const userExists = await DataRepository.checkUserExists(formData.emailOrPhone.trim());
-
-      setIsLoading(false);
-
-      if (userExists) {
-        Alert.alert(
-          "Código Enviado",
-          "Se envio un código de verificación: 1234",
-          [
-            { 
-              text: "Continuar", 
-              // Pasamos el email a la siguiente pantalla
-              onPress: () => navigation.navigate('ResetCode', { emailOrPhone: formData.emailOrPhone })
-            }
-          ]
-        );
-      } else {
-        Alert.alert("Error", "No existe ninguna cuenta con este correo.");
-      }
-    } catch (error) {
-      setIsLoading(false);
-      Alert.alert("Error", "Ocurrió un problema de conexión.");
-    }
-  };
+  // Consumo de lógica y estado desde el ViewModel (Custom Hook)
+  const {
+    formData,
+    errors,
+    updateFormData,
+    isLoading,
+    handleSendCode
+  } = useForgotPassword(navigation);
 
   return (
     <KeyboardAvoidingView

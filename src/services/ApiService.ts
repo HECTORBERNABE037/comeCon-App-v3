@@ -7,7 +7,7 @@ const getAuthHeaders = async () => {
   const token = await AsyncStorage.getItem('userToken');
   return {
     'Content-Type': 'application/json',
-    'Authorization': token ? `Token ${token}` : '' // O 'Bearer ${token}' según tu config de Django
+    'Authorization': token ? `Token ${token}` : '' 
   };
 };
 

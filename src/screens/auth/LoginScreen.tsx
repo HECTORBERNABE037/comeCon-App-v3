@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React from "react";
 import { 
   View, 
   Text, 
@@ -6,7 +6,6 @@ import {
   TouchableOpacity, 
   StyleSheet, 
   Image, 
-  Alert, 
   KeyboardAvoidingView, 
   Platform,
   StatusBar,
@@ -15,7 +14,7 @@ import {
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { COLORS, FONT_SIZES, RootStackParamList } from "../../../types"; 
-import { AuthContext } from '../../context/AuthContext'; 
+import { useLogin } from "../../hooks/useLogin"; // Importación del ViewModel
 
 const loginImage = require("../../../assets/logoApp.png");
 
@@ -27,26 +26,15 @@ interface LoginScreenProps {
 
 const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   
-  // Usamos el contexto 
-  const { login, isLoading } = useContext(AuthContext);
-  
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-
-  const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert('Error', 'Por favor ingresa correo y contraseña');
-      return;
-    }
-
-    // Llamamos al AuthContext (maneja Online/Offline internamente)
-    const result = await login({ email, password });
-
-    if (!result.success) {
-      Alert.alert('Error', result.error || 'Credenciales incorrectas');
-    }
-    // Si es exitoso, el AuthContext actualiza el estado 'user' y la App navega sola.
-  };
+  // Consumo de lógica y estado desde el ViewModel (Custom Hook)
+  const {
+    email,
+    setEmail,
+    password,
+    setPassword,
+    handleLogin,
+    isLoading
+  } = useLogin();
 
   return (
     <KeyboardAvoidingView 

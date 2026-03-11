@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { 
   View, 
   Text, 
@@ -6,65 +6,30 @@ import {
   TouchableOpacity, 
   StyleSheet, 
   Image, 
-  Alert, 
   KeyboardAvoidingView, 
   Platform,
   StatusBar
 } from "react-native";
 import { StackScreenProps } from "@react-navigation/stack";
-import { SetNewPasswordFormData, COLORS, FONT_SIZES,RootStackParamList } from "../../../types";
+import { COLORS, FONT_SIZES, RootStackParamList } from "../../../types";
 import { Ionicons } from '@expo/vector-icons';
-import { useForm } from '../../hooks/useForm';
-import { validateSetNewPassword } from '../../utils/validationRules';
-
-//import DatabaseService from '../../services/DatabaseService';
-import { DataRepository } from "../../services/DataRepository";
+import { useSetNewPassword } from '../../hooks/useSetNewPassword';
 
 const loginImage = require("../../../assets/logoApp.png");
-
 
 type Props = StackScreenProps<RootStackParamList, "SetNewPassword">;
 
 export const SetNewPasswordScreen: React.FC<Props> = ({ navigation, route }) => {
   
-  const { emailOrPhone } = route.params;
-
-  const { formData, errors, updateFormData, validate } = useForm<SetNewPasswordFormData>(
-    { newPassword: "", confirmPassword: "" },
-    validateSetNewPassword
-  );
-
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-
-  const handleSetPassword = async (): Promise<void> => {
-    if (!validate()) return;
-
-    setIsLoading(true);
-
-    try {
-      // ACTUALIZACIÓN EN BACKEND
-      const result = await DataRepository.updatePassword(emailOrPhone, formData.newPassword);
-      
-      setIsLoading(false);
-
-      if (result.success) {
-        Alert.alert(
-          "Éxito",
-          "Tu contraseña ha sido actualizada en el servidor.",
-          [{ 
-              text: "Ir al Login", 
-              onPress: () => navigation.reset({ index: 0, routes: [{ name: 'Login' }] }) 
-          }]
-        );
-      } else {
-        Alert.alert("Error", result.error || "No se pudo actualizar.");
-      }
-
-    } catch (error) {
-      setIsLoading(false);
-      Alert.alert("Error", "Ocurrió un error inesperado.");
-    }
-  };
+  // Consumo de lógica y estado desde el ViewModel (Custom Hook)
+  const {
+    emailOrPhone,
+    formData,
+    errors,
+    updateFormData,
+    isLoading,
+    handleSetPassword
+  } = useSetNewPassword(navigation, route);
 
   return (
     <KeyboardAvoidingView

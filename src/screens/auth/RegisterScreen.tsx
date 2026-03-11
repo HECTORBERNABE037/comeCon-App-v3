@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { 
   View, 
   Text, 
@@ -6,7 +6,6 @@ import {
   TouchableOpacity, 
   StyleSheet, 
   Image, 
-  Alert, 
   KeyboardAvoidingView, 
   Platform,
   StatusBar,
@@ -15,7 +14,7 @@ import {
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { COLORS, FONT_SIZES, RootStackParamList } from "../../../types";
-import { DataRepository } from '../../services/DataRepository'; 
+import { useRegister } from "../../hooks/useRegister"; // Importación del ViewModel
 
 const loginImage = require("../../../assets/logoApp.png");
 
@@ -27,50 +26,21 @@ interface RegisterScreenProps {
 
 export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
   
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-
-  const handleRegister = async () => {
-    // Validaciones básicas
-    if (!name || !email || !password || !confirmPassword) {
-      Alert.alert("Error", "Todos los campos son obligatorios (excepto teléfono)");
-      return;
-    }
-    if (password !== confirmPassword) {
-      Alert.alert("Error", "Las contraseñas no coinciden");
-      return;
-    }
-    if (password.length < 8) {
-      Alert.alert("Error", "La contraseña debe tener al menos 8 caracteres");
-      return;
-    }
-
-    setIsLoading(true);
-
-    const result = await DataRepository.register({
-      name,
-      email,
-      phone,
-      password // Django se encargará de hashear
-    });
-
-    setIsLoading(false);
-
-    if (result.success) {
-      Alert.alert(
-        "¡Cuenta Creada!", 
-        "Tu registro fue exitoso. Inicia sesión para continuar.",
-        [{ text: "Ir al Login", onPress: () => navigation.navigate("Login") }]
-      );
-    } else {
-      Alert.alert("Error de Registro", result.error || "No se pudo crear la cuenta.");
-    }
-  };
+  // Consumo de lógica y estado desde el ViewModel (Custom Hook)
+  const {
+    name,
+    setName,
+    email,
+    setEmail,
+    phone,
+    setPhone,
+    password,
+    setPassword,
+    confirmPassword,
+    setConfirmPassword,
+    isLoading,
+    handleRegister
+  } = useRegister(navigation);
 
   return (
     <KeyboardAvoidingView 

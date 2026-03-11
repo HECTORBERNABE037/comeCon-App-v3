@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { 
   View, 
   Text, 
@@ -6,16 +6,14 @@ import {
   TouchableOpacity, 
   StyleSheet, 
   Image, 
-  Alert, 
   KeyboardAvoidingView, 
   Platform,
   StatusBar
 } from "react-native";
 import { StackScreenProps } from "@react-navigation/stack";
-import { ResetCodeFormData, COLORS, FONT_SIZES,RootStackParamList } from "../../../types";
+import { COLORS, FONT_SIZES, RootStackParamList } from "../../../types";
 import { Ionicons } from '@expo/vector-icons';
-import { useForm } from '../../hooks/useForm';
-import { validateResetCode } from '../../utils/validationRules';
+import { useResetCode } from "../../hooks/useResetCode";
 
 const loginImage = require("../../../assets/logoApp.png");
 
@@ -23,34 +21,14 @@ type ResetCodeScreenProps = StackScreenProps<RootStackParamList, "ResetCode">;
 
 export const ResetCodeScreen: React.FC<ResetCodeScreenProps> = ({ navigation, route }) => {
   
-  const { emailOrPhone } = route.params;
-
-  const { formData, errors, updateFormData, validate } = useForm<ResetCodeFormData>(
-    { code: "" },
-    validateResetCode
-  );
-
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-
-  const handleVerifyCode = (): void => {
-    if (validate()) {
-      setIsLoading(true);
-      
-      console.log(`Código ingresado: ${formData.code}`);
-
-      setTimeout(() => {
-        setIsLoading(false);
-        
-        // Validación simulada (1234)
-        if (formData.code === "1234") {
-          Alert.alert("Éxito", "Código verificado correctamente.");
-          navigation.navigate('SetNewPassword', { emailOrPhone });
-        } else {
-          Alert.alert("Error", "El código ingresado no es válido.");
-        }
-      }, 1500);
-    }
-  };
+  // Consumo de lógica y estado desde el ViewModel (Custom Hook)
+  const {
+    formData,
+    errors,
+    updateFormData,
+    isLoading,
+    handleVerifyCode
+  } = useResetCode(navigation, route);
 
   return (
     <KeyboardAvoidingView
