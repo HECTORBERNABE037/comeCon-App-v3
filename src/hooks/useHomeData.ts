@@ -4,17 +4,14 @@ import { DataRepository } from '../services/DataRepository';
 import DatabaseService from '../services/DatabaseService';
 
 export const useHomeData = () => {
-  // Estados de datos
   const [products, setProducts] = useState<any[]>([]);
   const [promotions, setPromotions] = useState<any[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
   
-  // Estados de control de UI
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchText, setSearchText] = useState("");
 
-  // Lógica de carga de datos desde servicios
   const loadData = async () => {
     if (!refreshing) setLoading(true);
     try {
@@ -34,20 +31,18 @@ export const useHomeData = () => {
     }
   };
 
-  // Ejecutar carga 
   useFocusEffect(
     useCallback(() => {
       loadData();
     }, [])
   );
 
-  // Lógica de "Pull to refresh"
   const onRefresh = () => {
     setRefreshing(true);
     loadData();
   };
 
-  // Lógica de búsqueda y filtrado
+  // búsqueda y filtrado
   const handleSearch = (text: string) => {
     setSearchText(text);
     if (!text) {
@@ -62,7 +57,6 @@ export const useHomeData = () => {
     setFilteredProducts(filtered);
   };
 
-  // Exponemos 
   return {
     promotions,
     filteredProducts,

@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { COLORS, FONT_SIZES, RootStackParamList } from "../../../types"; 
-import { useLogin } from "../../hooks/useLogin"; // Importación del ViewModel
+import { useLogin } from "../../hooks/useLogin"; 
 
 const loginImage = require("../../../assets/logoApp.png");
 
@@ -26,7 +26,6 @@ interface LoginScreenProps {
 
 const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   
-  // Consumo de lógica y estado desde el ViewModel (Custom Hook)
   const {
     email,
     setEmail,

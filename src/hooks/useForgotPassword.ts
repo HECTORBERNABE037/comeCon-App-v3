@@ -19,7 +19,7 @@ export const useForgotPassword = (navigation: any) => {
     setIsLoading(true);
 
     try {
-      // VERIFICACIÓN CON BACKEND 
+      // verificar si existe el email en el back
       const userExists = await DataRepository.checkUserExists(formData.emailOrPhone.trim());
 
       setIsLoading(false);
@@ -31,7 +31,6 @@ export const useForgotPassword = (navigation: any) => {
           [
             { 
               text: "Continuar", 
-              // Pasamos el email a la siguiente pantalla
               onPress: () => navigation.navigate('ResetCode', { emailOrPhone: formData.emailOrPhone })
             }
           ]

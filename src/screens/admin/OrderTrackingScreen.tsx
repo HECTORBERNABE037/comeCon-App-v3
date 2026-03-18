@@ -1,93 +1,31 @@
-import React, { useState, useCallback } from 'react';
+import React from 'react';
 import { 
-  View, Text, StyleSheet, SafeAreaView, FlatList, TouchableOpacity, StatusBar, Alert, ActivityIndicator, RefreshControl, ScrollView
+  View, Text, StyleSheet, SafeAreaView, FlatList, TouchableOpacity, StatusBar, ActivityIndicator, RefreshControl, ScrollView
 } from 'react-native';
-import { useFocusEffect, useNavigation, CompositeNavigationProp } from '@react-navigation/native';
-import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 
-import { COLORS, FONT_SIZES, AdminTabParamList, RootStackParamList } from '../../../types';
+import { COLORS } from '../../../types';
 import { OrderActionModal } from '../../components/OrderActionModal';
-import { DataRepository } from '../../services/DataRepository'; 
-import { useAuth } from '../../context/AuthContext'; 
-
-type OrderTrackingNavigationProp = CompositeNavigationProp<
-  BottomTabNavigationProp<AdminTabParamList, 'OrderTrackingTab'>,
-  StackNavigationProp<RootStackParamList>
->;
+import { useOrderTracking } from '../../hooks/useOrderTracking';
 
 const OrderTrackingScreen = () => {
-  const navigation = useNavigation<OrderTrackingNavigationProp>();
-  const { user } = useAuth();
+  const {
+    loading,
+    refreshing,
+    selectedOrder,
+    isModalVisible,
+    activeOrders,
+    historyOrders,
+    onRefresh,
+    handleUpdateOrder,
+    handleCompleteOrder,
+    handleCancelOrder,
+    openActionModal,
+    closeActionModal,
+    getStatusColor
+  } = useOrderTracking();
 
-  const [orders, setOrders] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  
-  const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
-  const [isModalVisible, setIsModalVisible] = useState(false);
-
-  const loadOrders = async () => {
-    if (!refreshing) setLoading(true);
-    try {
-      const result = await DataRepository.getOrders();
-      if (result.success) {
-        setOrders((result as any).data);
-      }
-    } catch (error) { console.error(error); } 
-    finally { setLoading(false); setRefreshing(false); }
-  };
-
-  useFocusEffect(
-    useCallback(() => { loadOrders(); }, [])
-  );
-
-  const onRefresh = () => { setRefreshing(true); loadOrders(); };
-
-  // HANDLERS 
-  const handleUpdateOrder = async (orderId: string, data: any) => {
-    const res = await DataRepository.updateOrder(Number(orderId), {
-      status: data.status,
-      deliveryTime: data.estimatedTime,
-      notes: data.comment
-    });
-    if (res.success) {
-      setIsModalVisible(false); setSelectedOrder(null); loadOrders();
-      Alert.alert("Éxito", "Orden actualizada.");
-    } else { Alert.alert("Error", res.error); }
-  };
-
-  const handleCompleteOrder = async (orderId: string) => {
-    Alert.alert("Confirmar", "¿Marcar como entregada?", [
-      { text: "Cancelar", style: "cancel" },
-      { text: "Sí", onPress: async () => {
-          const res = await DataRepository.updateOrder(Number(orderId), { status: 'completado' });
-          if (res.success) { setIsModalVisible(false); loadOrders(); }
-      }}
-    ]);
-  };
-
-  const handleCancelOrder = async (orderId: string) => {
-    Alert.alert("Confirmar", "¿Cancelar orden?", [
-      { text: "No", style: "cancel" },
-      { text: "Sí", style: 'destructive', onPress: async () => {
-          const res = await DataRepository.updateOrder(Number(orderId), { status: 'cancelado' });
-          if (res.success) { setIsModalVisible(false); loadOrders(); }
-      }}
-    ]);
-  };
-
-  const openActionModal = (order: any) => {
-    setSelectedOrder(order);
-    setIsModalVisible(true);
-  };
-
-  // FILTROS 
-  const activeOrders = orders.filter(o => o.status === 'Pendiente' || o.status === 'En proceso');
-  const historyOrders = orders.filter(o => o.status?.toLowerCase() === 'completado' || o.status?.toLowerCase() === 'cancelado');
-
-  // RENDER 
+  // RENDER UI DE PRODUCTOS
   const renderProductList = (items: any[]) => {
     if (!items || items.length === 0) return null;
     return (
@@ -101,6 +39,7 @@ const OrderTrackingScreen = () => {
     );
   };
 
+  // RENDER UI DE ÓRDENES ACTIVAS
   const renderActiveItem = ({ item }: { item: any }) => (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
@@ -111,7 +50,7 @@ const OrderTrackingScreen = () => {
           </View>
           <Text style={styles.cardSubtitle}>Cliente: {item.user}</Text>
           
-          {/*  LISTA DE PRODUCTOS */}
+          {/* LISTA DE PRODUCTOS */}
           {renderProductList(item.items)}
 
           <Text style={styles.cardPrice}>Total: ${item.total}</Text>
@@ -130,6 +69,7 @@ const OrderTrackingScreen = () => {
     </View>
   );
 
+  // RENDER UI DEL HISTORIAL
   const renderHistoryItem = ({ item }: { item: any }) => (
     <TouchableOpacity style={styles.historyCard} activeOpacity={0.8} onPress={() => openActionModal(item)}>
       <View style={styles.historyHeader}>
@@ -141,23 +81,13 @@ const OrderTrackingScreen = () => {
         <Text style={styles.historyPrice}>${item.total}</Text>
       </View>
       
-      {/*  LISTA DE PRODUCTOS */}
+      {/* LISTA DE PRODUCTOS */}
       {renderProductList(item.items)}
 
       <Text style={styles.historyStatus}>{item.status}</Text>
       {item.history_notes ? <Text style={styles.historyNotes} numberOfLines={1}>"{item.history_notes}"</Text> : null}
     </TouchableOpacity>
   );
-
-  const getStatusColor = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case 'pendiente': return '#FF9800'; 
-      case 'en proceso': return '#2196F3';
-      case 'completado': return '#4CAF50';
-      case 'cancelado': return '#F44336';
-      default: return '#999';
-    }
-  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -171,6 +101,7 @@ const OrderTrackingScreen = () => {
           contentContainerStyle={{ paddingBottom: 100 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
         >
+          {/* SECCIÓN ACTIVAS */}
           <View style={styles.sectionHeader}>
             <Ionicons name="flash" size={20} color={COLORS.primary} />
             <Text style={styles.sectionTitle}> Activas ({activeOrders.length})</Text>
@@ -184,6 +115,7 @@ const OrderTrackingScreen = () => {
             ListEmptyComponent={<Text style={styles.emptyText}>No hay órdenes pendientes.</Text>}
           />
 
+          {/* SECCIÓN HISTORIAL */}
           <View style={[styles.sectionHeader, { marginTop: 25 }]}>
             <Ionicons name="file-tray-full" size={20} color="#666" />
             <Text style={[styles.sectionTitle, {color: '#666'}]}> Historial ({historyOrders.length})</Text>
@@ -199,10 +131,11 @@ const OrderTrackingScreen = () => {
         </ScrollView>
       )}
 
+      {/* MODAL DE ACCIONES */}
       <OrderActionModal
         visible={isModalVisible}
         order={selectedOrder}
-        onClose={() => setIsModalVisible(false)}
+        onClose={closeActionModal}
         onUpdate={handleUpdateOrder}
         onComplete={handleCompleteOrder}
         onCancel={handleCancelOrder}

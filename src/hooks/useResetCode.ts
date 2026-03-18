@@ -23,7 +23,7 @@ export const useResetCode = (navigation: any, route: any) => {
       setTimeout(() => {
         setIsLoading(false);
         
-        // Validación simulada (1234)
+        // Validacion simulada (1234)
         if (formData.code === "1234") {
           Alert.alert("Éxito", "Código verificado correctamente.");
           navigation.navigate('SetNewPassword', { emailOrPhone });

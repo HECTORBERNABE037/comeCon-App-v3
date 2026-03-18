@@ -11,7 +11,7 @@ export const useRegister = (navigation: any) => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const handleRegister = async () => {
-    // Validaciones básicas
+    // Validaciones 
     if (!name || !email || !password || !confirmPassword) {
       Alert.alert("Error", "Todos los campos son obligatorios (excepto teléfono)");
       return;

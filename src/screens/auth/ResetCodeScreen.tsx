@@ -21,7 +21,6 @@ type ResetCodeScreenProps = StackScreenProps<RootStackParamList, "ResetCode">;
 
 export const ResetCodeScreen: React.FC<ResetCodeScreenProps> = ({ navigation, route }) => {
   
-  // Consumo de lógica y estado desde el ViewModel (Custom Hook)
   const {
     formData,
     errors,

@@ -21,7 +21,6 @@ type Props = StackScreenProps<RootStackParamList, "SetNewPassword">;
 
 export const SetNewPasswordScreen: React.FC<Props> = ({ navigation, route }) => {
   
-  // Consumo de lógica y estado desde el ViewModel (Custom Hook)
   const {
     emailOrPhone,
     formData,

@@ -22,7 +22,6 @@ type Props = StackScreenProps<RootStackParamList, "ForgotPassword">;
 
 export const ForgotPasswordScreen: React.FC<Props> = ({ navigation }) => {
   
-  // Consumo de lógica y estado desde el ViewModel (Custom Hook)
   const {
     formData,
     errors,

@@ -21,7 +21,7 @@ export const useSetNewPassword = (navigation: any, route: any) => {
     setIsLoading(true);
 
     try {
-      // ACTUALIZACIÓN EN BACKEND
+      // actualizacion en el BACK
       const result = await DataRepository.updatePassword(emailOrPhone, formData.newPassword);
       
       setIsLoading(false);

@@ -1,80 +1,29 @@
-import React, { useState, useCallback } from 'react';
+import React from 'react';
 import { 
   View, 
   Text, 
   StyleSheet, 
   SafeAreaView, 
   FlatList, 
-  Image, 
   StatusBar, 
   ActivityIndicator,
-  Alert,
   RefreshControl,
   TouchableOpacity
 } from 'react-native';
-import { useFocusEffect, useNavigation, CompositeNavigationProp } from '@react-navigation/native';
-import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { COLORS, FONT_SIZES, ClientTabParamList, RootStackParamList } from '../../../types';
-import { DataRepository } from '../../services/DataRepository';
-import { useAuth } from '../../context/AuthContext';
-
-type ClientOrderTrackingNavigationProp = CompositeNavigationProp<
-  BottomTabNavigationProp<ClientTabParamList, 'ClientOrderTrackingTab'>,
-  StackNavigationProp<RootStackParamList>
->;
-
-const resolveImage = (imageSource: string | any) => {
-  if (!imageSource) return require('../../../assets/logoApp.png');
-  if (typeof imageSource === 'string' && (imageSource.startsWith('http') || imageSource.startsWith('file'))) {
-    return { uri: imageSource };
-  }
-  return require('../../../assets/logoApp.png'); 
-};
+import { COLORS, FONT_SIZES } from '../../../types';
+import { useClientOrderTracking } from '../../hooks/useClientOrderTracking'; // Importación del ViewModel
 
 const ClientOrderTrackingScreen = () => {
-  const navigation = useNavigation<ClientOrderTrackingNavigationProp>();
-  const { user } = useAuth();
-  
-  const [orders, setOrders] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-
-  // Cargar Órdenes del Backend
-  const loadOrders = async () => {
-    if (!user) return;
-    
-    try {
-      const result = await DataRepository.getOrders();
-      
-      if (result.success) {
-        setOrders((result as any).data);
-      } else {
-        console.log(result.error); 
-      }
-    } catch (error) {
-      console.error("Error loading orders:", error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  useFocusEffect(
-    useCallback(() => {
-      setLoading(true);
-      loadOrders();
-    }, [user])
-  );
-
-  const onRefresh = () => {
-    setRefreshing(true);
-    loadOrders();
-  };
+  // Consumo de lógica y estado desde el ViewModel (Custom Hook)
+  const {
+    orders,
+    loading,
+    refreshing,
+    onRefresh,
+    getStatusColor
+  } = useClientOrderTracking();
 
   const renderItem = ({ item }: { item: any }) => {
-    const imageSource = require('../../../assets/logoApp.png'); 
-
     return (
       <TouchableOpacity 
         style={styles.card}
@@ -106,16 +55,6 @@ const ClientOrderTrackingScreen = () => {
         </View>
       </TouchableOpacity>
     );
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case 'pendiente': return '#FF9800'; 
-      case 'en proceso': return '#2196F3'; 
-      case 'completado': return '#4CAF50'; 
-      case 'cancelado': return '#F44336'; 
-      default: return '#999';
-    }
   };
 
   return (

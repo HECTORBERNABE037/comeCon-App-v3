@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { COLORS, FONT_SIZES, RootStackParamList } from "../../../types";
-import { useRegister } from "../../hooks/useRegister"; // Importación del ViewModel
+import { useRegister } from "../../hooks/useRegister"; 
 
 const loginImage = require("../../../assets/logoApp.png");
 
@@ -26,7 +26,6 @@ interface RegisterScreenProps {
 
 export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
   
-  // Consumo de lógica y estado desde el ViewModel (Custom Hook)
   const {
     name,
     setName,

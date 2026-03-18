@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { 
   View, 
   Text, 
@@ -8,86 +8,25 @@ import {
   TouchableOpacity, 
   ScrollView, 
   StatusBar,
-  Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StackScreenProps } from '@react-navigation/stack';
-import { RootStackParamList, COLORS, FONT_SIZES, ClientProfileFormData } from '../../../types';
-import { DataRepository } from '../../services/DataRepository'; 
-import { useAuth } from '../../context/AuthContext';
+import { RootStackParamList, COLORS, FONT_SIZES } from '../../../types';
+import { useEditProfile } from '../../hooks/useEditProfile'; 
 
 type Props = StackScreenProps<RootStackParamList, 'EditClientProfile'>;
 
 const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
   
-  const { user, refreshUser } = useAuth(); 
-  const [loading, setLoading] = useState(false);
-
-  // Estado del formulario
-  const [formData, setFormData] = useState<ClientProfileFormData>({
-    fullName: '',
-    nickname: '',
-    email: '',
-    phone: '',
-    gender: '',
-    country: '',
-    address: ''
-  });
-
-  // Cargar datos actuales del usuario al abrir
-  useEffect(() => {
-    if (user) {
-      setFormData({
-        fullName: user.nombre || '',
-        nickname: user.nickname || '',
-        email: user.email || '', // Email solo lectura
-        phone: user.phone || '',
-        gender: user.gender || '',
-        country: user.country || '',
-        address: user.address || ''
-      });
-    }
-  }, [user]);
-
-  const handleChange = (key: keyof ClientProfileFormData, value: string) => {
-    setFormData(prev => ({ ...prev, [key]: value }));
-  };
-
-  const handleSave = async () => {
-    if (!user) return;
-    setLoading(true);
-
-    try {
-      // Preparamos payload para Django 
-      const payload = {
-        name: formData.fullName,
-        nickname: formData.nickname,
-        phone: formData.phone,
-        gender: formData.gender,
-        country: formData.country,
-        address: formData.address
-        // No enviamos email porque es el identificador
-      };
-
-      const result = await DataRepository.updateProfile(payload);
-
-      if (result.success) {
-        await refreshUser(); 
-        Alert.alert("¡Éxito!", "Perfil actualizado correctamente.", [
-          { text: "OK", onPress: () => navigation.goBack() }
-        ]);
-      } else {
-        Alert.alert("Error", result.error || "No se pudo actualizar.");
-      }
-    } catch (error) {
-      Alert.alert("Error", "Ocurrió un problema de conexión.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { 
+    formData, 
+    loading, 
+    handleChange, 
+    handleSave 
+  } = useEditProfile(navigation);
 
   return (
     <SafeAreaView style={styles.container}>
