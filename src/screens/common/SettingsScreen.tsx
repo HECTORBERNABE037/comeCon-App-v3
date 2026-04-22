@@ -1,105 +1,55 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { 
-  View, Text, StyleSheet, Switch, SafeAreaView, StatusBar, Alert, Platform 
+  View, Text, StyleSheet, Switch, SafeAreaView, StatusBar, Platform 
 } from 'react-native';
-import * as ImagePicker from 'expo-image-picker'; 
-import { useAuth } from '../../context/AuthContext';
-import { DataRepository } from '../../services/DataRepository';
 import { COLORS, FONT_SIZES } from '../../../types';
+import { useSettings } from '../../hooks/useSettings'; // Importación del ViewModel
 
 export const SettingsScreen = ({ navigation }: { navigation: any }) => {
-  const { user, refreshUser } = useAuth(); // Usamos refreshUser del contexto actualizado
-  
-  const [notificationsEnabled, setNotificationsEnabled] = useState(!!user?.allowNotifications);
-  const [cameraEnabled, setCameraEnabled] = useState(!!user?.allowCamera);
-  const [updating, setUpdating] = useState(false);
-
-  // Sincronizar al entrar para asegurar que tenemos lo último del servidor
-  useEffect(() => {
-    refreshUser();
-  }, []);
-
-  // Actualizar switches si el usuario cambia 
-  useEffect(() => {
-    if (user) {
-      setNotificationsEnabled(!!user.allowNotifications);
-      setCameraEnabled(!!user.allowCamera);
-    }
-  }, [user]);
-
-  const toggleNotifications = async () => {
-    const newValue = !notificationsEnabled;
-    setNotificationsEnabled(newValue); 
-    
-    setUpdating(true);
-    const result = await DataRepository.updateSetting({ allow_notifications: newValue });
-    setUpdating(false);
-
-    if (result.success) {
-      await refreshUser(); // Actualizamos el estado global
-    } else {
-      setNotificationsEnabled(!newValue);
-      Alert.alert("Error", result.error || "No se pudo actualizar. Revisa tu conexión.");
-    }
-  };
-
-  const toggleCamera = async () => {
-    const newValue = !cameraEnabled;
-    
-    // Si intenta activar, pedimos permiso real del dispositivo
-    if (newValue === true) {
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert("Permiso denegado", "Debes dar permiso de cámara en la configuración de tu teléfono.");
-        return;
-      }
-    }
-
-    setCameraEnabled(newValue);
-    setUpdating(true);
-    const result = await DataRepository.updateSetting({ allow_camera: newValue });
-    setUpdating(false);
-
-    if (result.success) {
-      await refreshUser();
-    } else {
-      setCameraEnabled(!newValue);
-      Alert.alert("Error", result.error || "No se pudo actualizar. Revisa tu conexión.");
-    }
-  };
+  // Consumo de lógica y estado desde el ViewModel (Custom Hook)
+  const {
+    notificationsEnabled,
+    cameraEnabled,
+    updating,
+    toggleNotifications,
+    toggleCamera
+  } = useSettings();
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#F2F2F2" />
       
+      {/* HEADER */}
       <View style={styles.headerCard}>
         <Text style={styles.headerTitle}>Configuración</Text>
         <View style={styles.headerUnderline} />
       </View>
 
-      {/* Sección Notificaciones */}
+      {/* SECCIÓN NOTIFICACIONES */}
       <View style={styles.content}>
-        <View style={styles.row}>
-          <Text style={styles.label}>Notificaciones</Text>
+        <View style={styles.settingRow}>
+          <Text style={styles.settingText}>Notificaciones Push</Text>
           <Switch
-            trackColor={{ false: "#767577", true: COLORS.primary }}
-            thumbColor={notificationsEnabled ? "#fff" : "#f4f3f4"}
+            trackColor={{ false: '#D3D3D3', true: COLORS.primary }}
+            thumbColor={COLORS.white}
+            ios_backgroundColor="#D3D3D3"
             onValueChange={toggleNotifications}
             value={notificationsEnabled}
             disabled={updating}
           />
         </View>
-        <Text style={styles.hint}>Recibe actualizaciones sobre el estado de tus pedidos.</Text>
+        <Text style={styles.hint}>Recibe alertas sobre el estado de tus pedidos y promociones.</Text>
       </View>
 
-      {/* Sección Cámara */}
+      {/* SECCIÓN CÁMARA */}
       <View style={styles.content}>
-        <View style={styles.row}>
-          <Text style={styles.label}>Acceso a Cámara</Text>
+        <View style={styles.settingRow}>
+          <Text style={styles.settingText}>Acceso a la Cámara</Text>
           <Switch
-            trackColor={{ false: "#767577", true: COLORS.primary }}
-            thumbColor={cameraEnabled ? "#fff" : "#f4f3f4"}
-            onValueChange={toggleCamera} 
+            trackColor={{ false: '#D3D3D3', true: COLORS.primary }}
+            thumbColor={COLORS.white}
+            ios_backgroundColor="#D3D3D3"
+            onValueChange={toggleCamera}
             value={cameraEnabled}
             disabled={updating}
           />
@@ -144,27 +94,29 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     marginBottom: 15
   },
-  row: {
+  settingRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 5
+    marginBottom: 8,
   },
-  label: {
-    fontSize: FONT_SIZES.large,
+  settingText: {
+    fontSize: FONT_SIZES.medium,
+    fontWeight: '600',
     color: COLORS.text,
-    fontWeight: '500'
   },
   hint: {
     fontSize: FONT_SIZES.small,
     color: COLORS.textSecondary,
-    marginTop: 5
+    lineHeight: 18,
   },
   savingText: {
     textAlign: 'center',
+    marginTop: 20,
     color: COLORS.primary,
-    marginTop: 10,
     fontStyle: 'italic',
-    fontSize: FONT_SIZES.small
+    fontSize: FONT_SIZES.small,
   }
 });
+
+export default SettingsScreen;

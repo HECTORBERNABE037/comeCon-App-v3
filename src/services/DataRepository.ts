@@ -14,6 +14,7 @@ export const DataRepository = {
     if (isOnline) {
       console.log("🌐 Intentando login Online...");
       const apiResult = await ApiService.login(email, password);
+      console.log(apiResult);
       
       if (apiResult.success) {
         await DatabaseService.syncUser(apiResult.data.user, password);
