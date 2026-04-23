@@ -1,70 +1,36 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { 
   View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, StatusBar, Alert, Platform
 } from 'react-native';
 import { StackScreenProps } from '@react-navigation/stack';
 import { COLORS, FONT_SIZES, RootStackParamList } from '../../../types';
 import { Ionicons, Feather } from '@expo/vector-icons';
-import DatabaseService from '../../services/DatabaseService'; // O DataRepository si implementas carrito ahí
-import { useAuth } from '../../context/AuthContext';
-import { useCart } from '../../context/CartContext';
+import { useProductDetails } from '../../hooks/useProductDetails'; // Importar el ViewModel
 
 type Props = StackScreenProps<RootStackParamList, 'ProductDetails'>;
 
-const resolveImage = (imageSource: string | any) => {
-  if (!imageSource) return require('../../../assets/logoApp.png');
-  if (typeof imageSource === 'string' && (imageSource.startsWith('http') || imageSource.startsWith('file://'))) {
-    return { uri: imageSource };
-  }
-  switch (imageSource) {
-    case 'bowlFrutas': return require('../../../assets/bowlFrutas.png');
-    case 'tostadaAguacate': return require('../../../assets/tostadaAguacate.png');
-    case 'Panques': return require('../../../assets/Panques.png');
-    case 'cafePanda': return require('../../../assets/cafePanda.png');
-    default: return require('../../../assets/logoApp.png');
-  }
-};
-
 export const ProductDetailScreen: React.FC<Props> = ({ navigation, route }) => {
-  const { addToCart } = useCart();
-
   const { platillo } = route.params; 
-  const { user } = useAuth(); 
-
-  const activePrice = platillo.promotionalPrice || platillo.price;
-  const hasPromo = !!platillo.promotionalPrice;
-  
-  const imageSource = resolveImage(platillo.image);
-
-  const [quantity, setQuantity] = useState(1);
-  const [selectedSize, setSelectedSize] = useState<string | null>(null);
-  const [availableSizes, setAvailableSizes] = useState<string[]>([]);
-
-  useEffect(() => {
-    if (platillo.title.includes('Cafe') || platillo.title.includes('Bebida')) {
-      setAvailableSizes(['M', 'G']); setSelectedSize('M');
-    } else if (platillo.title.includes('Bowl') || platillo.title.includes('Ensalada')) {
-      setAvailableSizes(['CH', 'M', 'G']); setSelectedSize('M');
-    } else {
-      setAvailableSizes(['Único']); setSelectedSize('Único');
-    }
-  }, [platillo]);
 
   const handleGoBack = () => navigation.goBack();
   const handleCart = () => navigation.navigate('Cart');
 
-  const handleAddToCart = async () => {
-    if (!user) {
-      Alert.alert("Error", "Inicia sesión primero.");
-      return;
-    }
-    const success = await addToCart(Number(platillo.id), quantity);
-    
-    if (success) {
-      Alert.alert('¡Listo!', 'Producto agregado al carrito.');
-      navigation.goBack(); 
-    }
-  };
+  // Consumo de lógica y estado desde el ViewModel
+  const {
+    quantity,
+    increaseQuantity,
+    decreaseQuantity,
+    selectedSize,
+    setSelectedSize,
+    availableSizes,
+    activePrice,
+    hasPromo,
+    imageSource,
+    handleAddToCart
+  } = useProductDetails({
+    platillo,
+    onSuccessAddToCart: handleGoBack // Pasamos la función de navegación al hook
+  });
 
   return (
     <View style={styles.container}>
@@ -90,9 +56,9 @@ export const ProductDetailScreen: React.FC<Props> = ({ navigation, route }) => {
         {/* CANTIDAD FLOTANTE */}
         <View style={styles.floatingQuantityContainer}>
           <View style={styles.quantitySelector}>
-            <TouchableOpacity style={styles.quantityButton} onPress={() => setQuantity(q => Math.max(1, q - 1))}><Ionicons name="remove" size={24} color={COLORS.text} /></TouchableOpacity>
+            <TouchableOpacity style={styles.quantityButton} onPress={decreaseQuantity}><Ionicons name="remove" size={24} color={COLORS.text} /></TouchableOpacity>
             <Text style={styles.quantityText}>{quantity}</Text>
-            <TouchableOpacity style={styles.quantityButton} onPress={() => setQuantity(q => q + 1)}><Ionicons name="add" size={24} color={COLORS.text} /></TouchableOpacity>
+            <TouchableOpacity style={styles.quantityButton} onPress={increaseQuantity}><Ionicons name="add" size={24} color={COLORS.text} /></TouchableOpacity>
           </View>
         </View>
 
@@ -121,7 +87,8 @@ export const ProductDetailScreen: React.FC<Props> = ({ navigation, route }) => {
           <Text style={styles.descriptionTitle}>Descripción</Text>
           <Text style={styles.descriptionText}>{platillo.description || "Sin descripción disponible."}</Text>
           
-          <TouchableOpacity style={styles.addToCartButton} onPress={handleAddToCart}>
+          {/* Pasamos Alert.alert al hook para mantener la UI separada de la lógica pura si es posible, aunque aquí es un híbrido aceptable */}
+          <TouchableOpacity style={styles.addToCartButton} onPress={() => handleAddToCart(Alert.alert)}>
             <Text style={styles.addToCartText}>añadir al carrito</Text>
           </TouchableOpacity>
         </View>
