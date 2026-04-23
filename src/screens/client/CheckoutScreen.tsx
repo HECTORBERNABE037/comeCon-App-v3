@@ -1,104 +1,29 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React from 'react';
 import { 
-  View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, StatusBar, Alert, ActivityIndicator
+  View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, StatusBar, ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StackScreenProps } from '@react-navigation/stack';
-import { useFocusEffect } from '@react-navigation/native';
-import { COLORS, FONT_SIZES, RootStackParamList, CartItem } from '../../../types';
-import DatabaseService from '../../services/DatabaseService';
-import { useAuth } from '../../context/AuthContext';
-import { DataRepository } from '../../services/DataRepository';
-import { useCart } from '../../context/CartContext';
+import { COLORS, FONT_SIZES, RootStackParamList } from '../../../types';
+import { useCheckout } from '../../hooks/useCheckout'; // Importación del ViewModel
 
 type Props = StackScreenProps<RootStackParamList, 'Checkout'>;
 
 const CheckoutScreen: React.FC<Props> = ({ navigation }) => {
-  const { user } = useAuth();
-  const { refreshCart } = useCart();
-  const [loading, setLoading] = useState(false);
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [savedCards, setSavedCards] = useState<any[]>([]);
-  const [selectedPaymentId, setSelectedPaymentId] = useState<string>('cash');
-
-  useFocusEffect(
-    useCallback(() => {
-      const loadData = async () => {
-        if (user) {
-          // 1. Carrito viene de SQLite (Offline-First persistence)
-          const items = await DatabaseService.getCartItems(Number(user.id));
-          setCartItems(items);
-          // 2. Tarjetas vienen de la API 
-          const cards = await DataRepository.getCards(Number(user.id));
-          setSavedCards(cards);
-        }
-      };
-      loadData();
-    }, [user])
-  );
-
-  const subtotal = cartItems.reduce((sum, item) => {
-     const price = item.promotionalPrice ? parseFloat(item.promotionalPrice) : parseFloat(item.price);
-     return sum + (price * item.quantity);
-  }, 0);
-  const shipping = 20.00;
-  const total = subtotal + shipping;
-
-  const handleDeleteCard = (cardId: number) => {
-    Alert.alert("Eliminar", "¿Borrar esta tarjeta?", [
-      { text: "Cancelar", style: "cancel" },
-      { text: "Sí", onPress: async () => {
-          await DataRepository.deleteCard(cardId); // Online delete
-          const cards = await DataRepository.getCards(Number(user?.id)); // Refresh online
-          setSavedCards(cards);
-          if(selectedPaymentId === cardId.toString()) setSelectedPaymentId('cash');
-      }}
-    ]);
-  };
-
-  const handlePay = async () => {
-    if (!user) return;
-    setLoading(true);
-
-    try {
-      let paymentMethod = 'Efectivo';
-      if (selectedPaymentId !== 'cash') {
-        const card = savedCards.find(c => c.id.toString() === selectedPaymentId);
-        paymentMethod = card ? `Tarjeta ${card.type} •••• ${card.lastFour}` : 'Tarjeta';
-      }
-      
-      //  PROCESAR ORDEN ONLINE 
-      const result = await DataRepository.createOrder({
-        userId: user.id,
-        items: cartItems,
-        total: total,
-        paymentMethod: paymentMethod,
-        address: user.address || "Dirección registrada"
-      });
-
-      if (result.success) {
-        // Limpiar carrito local solo si el servidor confirmó la orden
-        await DatabaseService.clearCart(Number(user.id));
-        await refreshCart();
-
-        Alert.alert("¡Pedido Exitoso!", "Tu orden ha sido enviada a cocina.", [
-          { 
-            text: "Ver Estado", 
-            onPress: () => navigation.reset({
-              index: 0,
-              routes: [{ name: 'ClientRoot' }] // Te lleva al inicio limpio
-            })
-          } 
-        ]);
-      } else {
-        Alert.alert("Error", result.error || "No se pudo crear la orden.");
-      }
-    } catch (error) {
-      Alert.alert("Error", "Fallo de conexión crítico.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Consumo de lógica y estado desde el ViewModel
+  const {
+    user,
+    loading,
+    cartItems,
+    savedCards,
+    selectedPaymentId,
+    setSelectedPaymentId,
+    subtotal,
+    shipping,
+    total,
+    handleDeleteCard,
+    handlePay
+  } = useCheckout(navigation);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -157,7 +82,7 @@ const CheckoutScreen: React.FC<Props> = ({ navigation }) => {
 
           <View style={styles.divider} />
 
-          {/* 3. Opción Efectivo */}
+          {/* Opción Efectivo */}
           <TouchableOpacity 
             style={[styles.paymentOption, selectedPaymentId === 'cash' && styles.activeOption]}
             onPress={() => setSelectedPaymentId('cash')}
@@ -173,13 +98,16 @@ const CheckoutScreen: React.FC<Props> = ({ navigation }) => {
         {/* Resumen Productos */}
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>Productos ({cartItems.length})</Text>
-          {cartItems.map((item, index) => (
-            <View key={index} style={styles.miniItemRow}>
-              <Text style={styles.miniQty}>{item.quantity}x</Text>
-              <Text style={styles.miniTitle}>{item.title}</Text>
-              <Text style={styles.miniPrice}>${(parseFloat(item.price) * item.quantity).toFixed(2)}</Text>
-            </View>
-          ))}
+          {cartItems.map((item, index) => {
+             const itemPrice = item.promotionalPrice ? parseFloat(item.promotionalPrice) : parseFloat(item.price);
+             return (
+              <View key={index} style={styles.miniItemRow}>
+                <Text style={styles.miniQty}>{item.quantity}x</Text>
+                <Text style={styles.miniTitle}>{item.title}</Text>
+                <Text style={styles.miniPrice}>${(itemPrice * item.quantity).toFixed(2)}</Text>
+              </View>
+             );
+          })}
         </View>
 
       </ScrollView>

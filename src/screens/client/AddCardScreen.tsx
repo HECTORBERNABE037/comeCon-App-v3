@@ -1,54 +1,22 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { 
-  View, Text, StyleSheet, SafeAreaView, TextInput, TouchableOpacity, StatusBar, Alert, KeyboardAvoidingView, Platform, ScrollView
+  View, Text, StyleSheet, SafeAreaView, TextInput, TouchableOpacity, StatusBar, KeyboardAvoidingView, Platform, ScrollView
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StackScreenProps } from '@react-navigation/stack';
-import { COLORS, FONT_SIZES, RootStackParamList, CardFormData } from '../../../types';
-import DatabaseService from '../../services/DatabaseService';
-import { useAuth } from '../../context/AuthContext';
-import { DataRepository } from '../../services/DataRepository';
+import { COLORS, FONT_SIZES, RootStackParamList } from '../../../types';
+import { useAddCard } from '../../hooks/useAddCard'; // Importación del ViewModel
 
 type Props = StackScreenProps<RootStackParamList, 'AddCard'>;
 
 const AddCardScreen: React.FC<Props> = ({ navigation }) => {
-  const { user } = useAuth();
-  const [loading, setLoading] = useState(false);
-  
-  const [formData, setFormData] = useState<CardFormData>({
-    number: '', expiryDate: '', cvv: '', country: '', holderName: ''
-  });
-
-  const handleSave = async () => {
-    if (formData.number.length < 16 || !formData.holderName || !formData.cvv || !user) {
-      Alert.alert("Error", "Por favor completa los datos correctamente.");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      // ENVIAR A DJANGO
-      const result = await DataRepository.addCard({
-        user: Number(user.id), // Enviamos ID de usuario
-        last_four: formData.number.slice(-4), // guardar solo últimos 4 digitos
-        holder_name: formData.holderName,
-        expiry_date: formData.expiryDate, 
-        type: 'visa' 
-      });
-      
-      if (result.success) {
-        Alert.alert("Éxito", "Tarjeta guardada en tu cuenta.", [
-          { text: "OK", onPress: () => navigation.goBack() }
-        ]);
-      } else {
-        Alert.alert("Error", result.error || "No se pudo guardar.");
-      }
-    } catch (error) {
-      Alert.alert("Error", "Ocurrió un problema de conexión.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Consumo de lógica y estado desde el ViewModel
+  const {
+    formData,
+    setFormData,
+    loading,
+    handleSave
+  } = useAddCard(navigation);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -60,7 +28,7 @@ const AddCardScreen: React.FC<Props> = ({ navigation }) => {
       </View>
 
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{flex:1}}>
-        <ScrollView contentContainerStyle={styles.content}>
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           
           {/* Card Preview */}
           <View style={styles.cardPreview}>
