@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { 
   Modal, 
   View, 
@@ -7,18 +7,14 @@ import {
   Image, 
   TextInput, 
   TouchableOpacity, 
-  Alert, 
   Platform, 
   KeyboardAvoidingView, 
   ScrollView,
   Switch 
 } from 'react-native';
 import { Ionicons, Feather } from '@expo/vector-icons';
-import { Platillo, ProductFormData, COLORS, FONT_SIZES } from '../../types';
-import { useForm } from '../hooks/useForm';
-import { validateProductForm } from '../utils/validationRules';
-import { showImageOptions } from '../utils/ImagePickerHelper';
-import { useAuth } from '../context/AuthContext';
+import { Platillo, COLORS, FONT_SIZES } from '../../types';
+import { useEditProduct } from '../hooks/useEditProduct';
 
 interface Props {
   visible: boolean;
@@ -30,68 +26,17 @@ interface Props {
 
 export const EditProductModal: React.FC<Props> = ({ visible, product, onClose, onSave, onDelete }) => {
   
-  const { user } = useAuth();
-  const [newImageUri, setNewImageUri] = useState<string | null>(null);
-  
-  // Estado local para visibilidad
-  const [isVisible, setIsVisible] = useState(true);
-
-  const { formData, errors, updateFormData, validate, setFormData } = useForm<ProductFormData>(
-    { title: '', subtitle: '', price: '', description: '', category: '' },
-    validateProductForm
-  );
-
-  useEffect(() => {
-    if (product) {
-      setFormData({
-        title: product.title,
-        subtitle: product.subtitle || '', 
-        price: product.price,
-        description: product.description || '',
-        category: product.category || 'General' 
-      });
-      setIsVisible(!!product.visible);
-      setNewImageUri(null);
-    }
-  }, [product]);
-
-  const handleSave = () => {
-    if (!product) return;
-    
-    // El botón no hace nada si esto fall
-    if (!formData.title || !formData.price) {
-      Alert.alert("Campos requeridos", "Por favor ingresa al menos el Nombre y el Precio.");
-      return;
-    }
-
-    const updatedProduct: Platillo = {
-      ...product,
-      title: formData.title,
-      subtitle: formData.subtitle,
-      price: formData.price,
-      description: formData.description,
-      category: formData.category,
-      visible: isVisible, // estado del Switch
-      image: newImageUri || product.image 
-    };
-
-    // función del padre
-    onSave(updatedProduct);
-  };
-
-  const handleDelete = () => {
-    if (product) onDelete(product.id.toString());
-  };
-
-  const handleImagePick = () => {
-    if (!user?.allowCamera) {
-      Alert.alert("Permiso", "Habilita la cámara en configuración.");
-      return;
-    }
-    showImageOptions(setNewImageUri);
-  };
-
-  const displayImage = newImageUri ? { uri: newImageUri } : product?.image;
+  // Consumo de lógica y estado desde el ViewModel
+  const {
+    formData,
+    updateFormData,
+    isVisible,
+    setIsVisible,
+    displayImage,
+    handleSave,
+    handleDelete,
+    handleImagePick
+  } = useEditProduct({ product, onSave, onDelete, onClose });
 
   return (
     <Modal animationType="slide" transparent={true} visible={visible} onRequestClose={onClose}>
@@ -116,6 +61,7 @@ export const EditProductModal: React.FC<Props> = ({ visible, product, onClose, o
                 <Feather name="camera" size={16} color={COLORS.primary} />
               </TouchableOpacity>
             </View>
+            
             {/* SWITCH VISIBILIDAD */}
             <View style={styles.switchRow}>
               <Text style={styles.label}>Visible para clientes</Text>

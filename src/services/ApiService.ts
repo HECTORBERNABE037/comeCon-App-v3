@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const API_URL = 'http://192.168.1.71:8000/api'; 
+const API_URL = 'http://192.168.1.70:8000/api'; 
 
 // Helper para obtener cabeceras con Token
 const getAuthHeaders = async () => {
