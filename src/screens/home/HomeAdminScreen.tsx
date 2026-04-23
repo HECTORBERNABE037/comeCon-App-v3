@@ -1,11 +1,10 @@
-import React, { useState, useCallback } from "react";
+import React from "react";
 import { 
   View, 
   Text, 
   StyleSheet, 
   TouchableOpacity, 
   SafeAreaView, 
-  Alert, 
   TextInput,
   Image,
   FlatList,
@@ -14,7 +13,7 @@ import {
   ActivityIndicator,
   RefreshControl
 } from "react-native";
-import { useFocusEffect, CompositeNavigationProp } from "@react-navigation/native"; 
+import { CompositeNavigationProp } from "@react-navigation/native"; 
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { StackNavigationProp } from "@react-navigation/stack";
 import { Feather, Ionicons } from "@expo/vector-icons";
@@ -24,9 +23,7 @@ import { RootStackParamList, AdminTabParamList, COLORS, FONT_SIZES, Platillo } f
 import { EditProductModal } from "../../components/EditProductModal";
 import { PromoteProductModal } from "../../components/PromoteProductModal";
 import { AddProductModal } from "../../components/AddProductModal"; 
-import { DataRepository } from '../../services/DataRepository'; 
-import { useAuth } from "../../context/AuthContext";
-import { advancedSearch } from "../../utils/searchHelper";
+import { useHomeAdmin } from "../../hooks/useHomeAdmin"; // Importación del ViewModel
 
 type HomeAdminScreenNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<AdminTabParamList, 'HomeAdminTab'>,
@@ -37,160 +34,19 @@ interface HomeAdminScreenProps {
   navigation: HomeAdminScreenNavigationProp;
 }
 
-const resolveImage = (imageName: string | any) => {
-  if (imageName?.uri) return { uri: imageName.uri };
-  if (typeof imageName === 'string' && (imageName.startsWith('http') || imageName.startsWith('file'))) {
-    return { uri: imageName };
-  }
-  return require('../../../assets/logoApp.png');
-};
-
 const HomeAdminScreen: React.FC<HomeAdminScreenProps> = ({ navigation }) => {
-  const { user } = useAuth();
-  
-  const [productList, setProductList] = useState<Platillo[]>([]); 
-  const [searchQuery, setSearchQuery] = useState(""); 
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  
-  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
-  const [selectedProductEdit, setSelectedProductEdit] = useState<Platillo | null>(null);
-  const [isPromoteModalVisible, setIsPromoteModalVisible] = useState(false);
-  const [selectedProductPromote, setSelectedProductPromote] = useState<Platillo | null>(null);
-  const [isAddModalVisible, setIsAddModalVisible] = useState(false);
-
-  // CARGAR PRODUCTOS
-  const loadProducts = async () => {
-    if (!refreshing) setLoading(true);
-    try {
-      const productsFromDB = await DataRepository.getAdminProducts();
-      
-      const formattedProducts: Platillo[] = productsFromDB.map((p:any) => ({
-        id: p.id.toString(),
-        title: p.title,
-        subtitle: p.subtitle || '', 
-        category: p.category || 'General', 
-        price: p.price.toString(),
-        description: p.description || '',
-        image: resolveImage(p.image),
-        originalImageString: p.image, 
-        promotionalPrice: p.promotionalPrice ? p.promotionalPrice.toString() : undefined,
-        promotionId: p.promoId ? p.promoId.toString() : undefined,
-        visible: p.visible 
-      }));
-
-      setProductList(formattedProducts);
-    } catch (error) {
-      console.error("Error cargando productos:", error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  useFocusEffect(
-    useCallback(() => {
-      loadProducts();
-    }, [])
-  );
-
-  const onRefresh = () => {
-    setRefreshing(true);
-    loadProducts();
-  };
-
-  const filteredProducts = advancedSearch(productList, searchQuery, ['title', 'category']);
-
-  //  HANDLERS
-
-  const handleAddProduct = async (newProductData: any) => {
-    const res = await DataRepository.saveProduct({
-      ...newProductData,
-      category: newProductData.category || 'General',
-      visible: true
-    });
-    
-    if (res.success) {
-      setIsAddModalVisible(false);
-      loadProducts();
-      Alert.alert("Éxito", "Producto añadido.");
-    } else {
-      Alert.alert("Error", res.error || "No se pudo crear.");
-    }
-  };
-
-  const handleSaveProduct = async (updatedProduct: any) => { // Usamos any para flexibilidad 
-
-    let imageToSave = updatedProduct.image;
-
-    // Si es un objeto de imagen resuelta (no del picker) y tiene URI, extraemos la URI string
-    if (updatedProduct.image?.uri && typeof updatedProduct.image.uri === 'string') {
-        imageToSave = updatedProduct.image.uri;
-    }
-    // Si es un require (numero), lo dejamos o usamos el original si existe
-    if (typeof imageToSave === 'number' && updatedProduct.originalImageString) {
-        imageToSave = updatedProduct.originalImageString;
-    }
-
-    const cleanProduct = {
-        ...updatedProduct,
-        image: imageToSave
-    };
-
-    const res = await DataRepository.saveProduct(cleanProduct, Number(updatedProduct.id));
-    
-    if (res.success) {
-      setIsEditModalVisible(false);
-      setSelectedProductEdit(null);
-      loadProducts(); 
-      Alert.alert("Éxito", "Producto actualizado.");
-    } else {
-      Alert.alert("Error", res.error || "No se pudo actualizar.");
-    }
-  };
-
-  const handleDeleteProduct = async (productId: string) => {
-    const res = await DataRepository.deleteProductAdmin(Number(productId));
-    if (res.success) {
-      setIsEditModalVisible(false);
-      setSelectedProductEdit(null);
-      loadProducts();
-    } else {
-      Alert.alert("Error", res.error);
-    }
-  };
-
-  const handleSavePromotion = async (productId: string, promoData: any, existingPromoId?: number) => {
-    // Si existingPromoId viene del modal, se pasa al repositorio
-    // Si es undefined, el repositorio hará un POST 
-    // Si es número, hará un PATCH
-    const res = await DataRepository.savePromotion(Number(productId), promoData, existingPromoId);
-    
-    if (res.success) {
-      setIsPromoteModalVisible(false);
-      loadProducts(); 
-      Alert.alert("Éxito", existingPromoId ? "Promoción actualizada." : "Promoción creada.");
-    } else {
-      Alert.alert("Error", res.error || "No se pudo guardar la promoción.");
-    }
-  };
-
-  const handleDeletePromotion = async (promoId: string) => {
-    Alert.alert("Eliminar Promoción", "¿Quitar la oferta de este producto?", [
-      { text: "Cancelar", style: "cancel" },
-      { text: "Eliminar", onPress: async () => {
-          const res = await DataRepository.deletePromotion(Number(promoId));
-          if (res.success) {
-            setIsPromoteModalVisible(false);
-            loadProducts();
-          } else {
-            Alert.alert("Error", res.error);
-          }
-      }}
-    ]);
-  };
-
-  //  RENDER
+  // Consumo de lógica y estado desde el ViewModel (Custom Hook)
+  const {
+    searchQuery, setSearchQuery,
+    loading, refreshing, filteredProducts,
+    isAddModalVisible, setIsAddModalVisible,
+    isEditModalVisible, setIsEditModalVisible,
+    selectedProductEdit, setSelectedProductEdit,
+    isPromoteModalVisible, setIsPromoteModalVisible,
+    selectedProductPromote, setSelectedProductPromote,
+    onRefresh, handleAddProduct, handleSaveProduct,
+    handleDeleteProduct, handleSavePromotion, handleDeletePromotion
+  } = useHomeAdmin();
 
   const renderAdminItem = ({ item }: { item: Platillo }) => {
     const hasPromo = !!item.promotionalPrice;
@@ -206,10 +62,8 @@ const HomeAdminScreen: React.FC<HomeAdminScreenProps> = ({ navigation }) => {
         <View style={styles.itemTextContainer}>
           <Text style={[styles.itemTitle, !item.visible && {color: '#999'}]}>{item.title}</Text>
           
-          {/* Subtítulo */}
           {item.subtitle ? <Text style={styles.itemSubtitle}>{item.subtitle}</Text> : null}
           
-          {/* Categoría */}
           <Text style={{fontSize: 10, color: COLORS.primary, marginBottom: 2, fontWeight:'600'}}>{item.category}</Text>
 
           <View>

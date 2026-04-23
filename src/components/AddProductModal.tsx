@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { 
   Modal, 
   View, 
@@ -9,15 +9,11 @@ import {
   KeyboardAvoidingView, 
   Platform,
   Image,
-  ScrollView,
-  Alert 
+  ScrollView 
 } from 'react-native';
-import { Feather, Ionicons } from '@expo/vector-icons';
-import { COLORS, FONT_SIZES, ProductFormData } from '../../types';
-import { useForm } from '../hooks/useForm';
-import { validateProductForm } from '../utils/validationRules'; 
-import { showImageOptions } from '../utils/ImagePickerHelper';
-import { useAuth } from '../context/AuthContext';
+import { Ionicons } from '@expo/vector-icons';
+import { COLORS } from '../../types';
+import { useAddProduct } from '../hooks/useAddProduct';
 
 interface Props {
   visible: boolean;
@@ -26,48 +22,18 @@ interface Props {
 }
 
 export const AddProductModal: React.FC<Props> = ({ visible, onClose, onSave }) => {
-  const { user } = useAuth();
-  const [imageUri, setImageUri] = useState<string | null>(null);
-
-  // Inicializamos el formulario 
-  const { formData, errors, updateFormData, validate, setFormData } = useForm<ProductFormData>(
-    { title: '', subtitle: '', price: '', description: '', category: '' },
-    validateProductForm
-  );
-
-  const handleSave = () => {
-    // Validamos campos obligatorios (Título y Precio)
-    if (!formData.title || !formData.price) {
-      Alert.alert("Faltan datos", "El título y el precio son obligatorios.");
-      return;
-    }
-
-    const newProduct = {
-      ...formData,
-      image: imageUri,
-      category: formData.category || 'General', 
-      visible: true
-    };
-
-    onSave(newProduct);
-    resetForm();
-  };
-
-  const resetForm = () => {
-    setFormData({ title: '', subtitle: '', price: '', description: '', category: '' });
-    setImageUri(null);
-  };
-
-  const handleImagePick = () => {
-    if (!user?.allowCamera) {
-      Alert.alert("Permiso", "Habilita la cámara en configuración.");
-      return;
-    }
-    showImageOptions(setImageUri);
-  };
+  // Consumo de lógica y estado desde el ViewModel (Custom Hook)
+  const {
+    formData,
+    imageUri,
+    updateFormData,
+    handleSave,
+    handleClose,
+    handleImagePick
+  } = useAddProduct({ onSave, onClose });
 
   return (
-    <Modal animationType="slide" transparent={true} visible={visible} onRequestClose={onClose}>
+    <Modal animationType="slide" transparent={true} visible={visible} onRequestClose={handleClose}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalOverlay}>
         <View style={styles.modalContainer}>
           <ScrollView contentContainerStyle={{ alignItems: 'center' }} showsVerticalScrollIndicator={false}>
@@ -130,7 +96,7 @@ export const AddProductModal: React.FC<Props> = ({ visible, onClose, onSave }) =
 
             {/* Botones de Acción */}
             <View style={styles.actionButtons}>
-              <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
+              <TouchableOpacity style={styles.cancelButton} onPress={handleClose}>
                 <Text style={styles.cancelText}>Cancelar</Text>
               </TouchableOpacity>
               
